@@ -1,3 +1,6 @@
+from datetime import datetime
+import random
+
 def get_advice(district, crop):
     """Main advisory logic with comprehensive rules"""
     weather_data = {
@@ -34,3 +37,60 @@ def get_advice(district, crop):
             advice.append(message)
     
     return advice if advice else ["✅ Normal conditions - proceed with planting"]
+
+def get_system_status():
+    """Get the current status of all system components"""
+    # In a real system, these would be actual checks
+    # For now, we'll simulate with some randomness
+    status = {
+        "satelliteFeed": random.choice(["Online", "Degraded"]),
+        "weatherApi": random.choice(["Active", "Degraded"]),
+        "spaceWeatherMonitor": random.choice(["Alert Mode", "Normal"]),
+        "smsGateway": random.choice(["Connected", "Degraded"])
+    }
+    
+    # Add some realistic behavior
+    if status["spaceWeatherMonitor"] == "Alert Mode":
+        status["satelliteFeed"] = "Online"  # Always online during alerts
+    
+    return status
+
+def calculate_planting_window(district, crop):
+    """Calculate the optimal planting window based on weather data"""
+    # This would use historical weather data and forecasts
+    # For now, return a mock window
+    return "June 5-15"
+
+def get_crop_health(district, crop):
+    """Get the health status of crops in a district"""
+    # This would use NDVI data and other metrics
+    # For now, return mock data
+    return {
+        "ndvi_value": 0.75,
+        "health_status": "healthy",
+        "rainfall": 25,
+        "temperature": 22,
+        "pest_risk": "low"
+    }
+
+def generate_alert(district, crop, alert_type):
+    """Generate an alert based on conditions"""
+    alerts = {
+        "weather": [
+            "Heavy rainfall expected in the next 24 hours",
+            "Drought conditions developing",
+            "High winds forecast"
+        ],
+        "pest": [
+            "Increased pest activity detected",
+            "Disease outbreak reported in neighboring areas",
+            "Pest control measures recommended"
+        ],
+        "space_weather": [
+            "Solar flare activity may affect crop growth",
+            "Increased radiation levels detected",
+            "Space weather conditions normal"
+        ]
+    }
+    
+    return random.choice(alerts.get(alert_type, ["No alerts at this time"]))
