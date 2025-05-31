@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Farmer Registration</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { padding: 20px; max-width: 600px; margin: 0 auto; }
+    .form-group { margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h2>Register as a Farmer</h2>
+    </div>
+    <div class="card-body">
+      <form id="farmerForm">
+        <div class="form-group">
+          <input type="text" class="form-control" name="name" placeholder="Name" required>
+        </div>
+        <div class="form-group">
+          <select class="form-control" name="district" required>
+            <option value="">Select District</option>
+            <option value="Kabale">Kabale</option>
+            <option value="Masaka">Masaka</option>
+            <option value="Gulu">Gulu</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <input type="text" class="form-control" name="sub_county" placeholder="Sub-county" required>
+        </div>
+        <div class="form-group">
+          <select class="form-control" name="crop" required>
+            <option value="">Select Crop</option>
+            <option value="maize">Maize</option>
+            <option value="beans">Beans</option>
+            <option value="coffee">Coffee</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <select class="form-control" name="language" required>
+            <option value="">Select Language</option>
+            <option value="English">English</option>
+            <option value="Luganda">Luganda</option>
+            <option value="Runyankole">Runyankole</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+      <div id="response" class="mt-3"></div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("farmerForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = {
+        name: form.name.value,
+        district: form.district.value,
+        sub_county: form.sub_county.value,
+        crop: form.crop.value,
+        language: form.language.value
+      };
+
+      try {
+        const res = await fetch("/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        
+        if (res.ok) {
+          window.location.href = `/get-advice?district=${encodeURIComponent(data.district)}&crop=${encodeURIComponent(data.crop)}`;
+        } else {
+          const result = await res.json();
+          document.getElementById("response").innerHTML = 
+            `<div class="alert alert-danger">${result.error || 'Registration failed'}</div>`;
+        }
+      } catch (error) {
+        document.getElementById("response").innerHTML = 
+          `<div class="alert alert-danger">Network error: ${error.message}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>
