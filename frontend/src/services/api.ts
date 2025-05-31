@@ -5,7 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000
 const handleResponse = async <T>(response: Response): Promise<ApiResponse<T>> => {
   if (!response.ok) {
     const error: ApiError = await response.json();
-    throw new Error(error.message || 'An error occurred');
+    throw new Error(error.error || 'An error occurred');
   }
   return response.json();
 };

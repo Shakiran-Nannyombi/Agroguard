@@ -13,7 +13,7 @@ import CropCalendar from "@/components/CropCalendar";
 import { useQuery } from "@tanstack/react-query";
 
 // API endpoints
-const API_BASE_URL = "http://localhost:3000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // Types
 interface DashboardStats {

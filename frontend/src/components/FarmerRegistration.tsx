@@ -96,7 +96,7 @@ const FarmerRegistration = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to register farmer. Please try again.",
+        description: error instanceof Error ? error.message : "An unexpected error occurred during registration.",
         variant: "destructive"
       });
     } finally {
@@ -148,6 +148,7 @@ const FarmerRegistration = () => {
                   placeholder="Enter farmer's full name"
                   aria-invalid={!!errors.name}
                   aria-describedby={errors.name ? "name-error" : undefined}
+                  autoComplete="name"
                 />
                 {errors.name && (
                   <p className="text-sm text-red-500" id="name-error">{errors.name}</p>
@@ -163,6 +164,7 @@ const FarmerRegistration = () => {
                   placeholder="+256 700 000 000"
                   aria-invalid={!!errors.phone}
                   aria-describedby={errors.phone ? "phone-error" : undefined}
+                  autoComplete="tel"
                 />
                 {errors.phone && (
                   <p className="text-sm text-red-500" id="phone-error">{errors.phone}</p>
@@ -175,7 +177,7 @@ const FarmerRegistration = () => {
                   value={formData.district} 
                   onValueChange={(value) => handleInputChange('district', value)}
                 >
-                  <SelectTrigger aria-invalid={!!errors.district}>
+                  <SelectTrigger id="district" aria-invalid={!!errors.district} autoComplete="address-level1">
                     <SelectValue placeholder="Select district" />
                   </SelectTrigger>
                   <SelectContent>
@@ -196,6 +198,7 @@ const FarmerRegistration = () => {
                   value={formData.subCounty}
                   onChange={(e) => handleInputChange('subCounty', e.target.value)}
                   placeholder="Enter sub-county"
+                  autoComplete="address-level2"
                 />
               </div>
 
@@ -205,7 +208,7 @@ const FarmerRegistration = () => {
                   value={formData.crop} 
                   onValueChange={(value) => handleInputChange('crop', value)}
                 >
-                  <SelectTrigger aria-invalid={!!errors.crop}>
+                  <SelectTrigger id="crop" aria-invalid={!!errors.crop} autoComplete="off">
                     <SelectValue placeholder="Select primary crop" />
                   </SelectTrigger>
                   <SelectContent>
@@ -225,7 +228,7 @@ const FarmerRegistration = () => {
                   value={formData.language} 
                   onValueChange={(value) => handleInputChange('language', value as FormData['language'])}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="language" autoComplete="language">
                     <SelectValue placeholder="Select language" />
                   </SelectTrigger>
                   <SelectContent>
@@ -258,7 +261,7 @@ const FarmerRegistration = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {farmers.map((farmer) => (
+            {farmers && Array.isArray(farmers) && farmers.map((farmer) => (
               <div key={farmer.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                 <div className="flex justify-between items-start">
                   <div className="space-y-1">

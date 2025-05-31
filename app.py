@@ -6,9 +6,10 @@ from logic import get_advice, get_system_status
 from flask_cors import CORS
 from datetime import datetime, timedelta
 from models import Farmer, Alert, CropHealth, User, db
+import traceback
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["http://localhost:5173"])
 
 app.config['SECRET_KEY'] = 'your-secret-key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///farmers.db'
@@ -29,14 +30,14 @@ def home():
     return render_template('register.html')
 
 # Register route - handles form data
-@app.route('/api/register', methods=['POST'])
-def register():
+@app.route('/api/farmers', methods=['POST'])
+def register_farmer():
     try:
         data = request.get_json()
         farmer = Farmer(
             name=data['name'],
             district=data['district'],
-            sub_county=data['sub_county'],
+            sub_county=data.get('subCounty'),
             crop=data['crop'],
             language=data['language'],
             phone=data.get('phone')  # Optional field
@@ -107,6 +108,7 @@ def dashboard_stats():
             'nextPlantingWindow': next_planting_window
         })
     except Exception as e:
+        app.logger.error("Exception in dashboard_stats: %s", traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 # Recent Alerts API
@@ -185,6 +187,24 @@ def create_admin():
         return jsonify({'message': 'Admin user created successfully'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# API endpoint to get all farmers as JSON
+@app.route('/api/farmers', methods=['GET'])
+def get_farmers():
+    farmers = Farmer.query.all()
+    return jsonify([
+        {
+            'id': farmer.id,
+            'name': farmer.name,
+            'phone': farmer.phone,
+            'district': farmer.district,
+            'subCounty': farmer.sub_county,
+            'crop': farmer.crop,
+            'language': farmer.language,
+            'status': farmer.status
+        }
+        for farmer in farmers
+    ])
 
 # Initialize the database
 with app.app_context():
