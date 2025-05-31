@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { User, Phone, MapPin, Sprout, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Farmer, FormData, FormField } from '@/types';
+import { validateForm, formatPhoneNumber } from '@/utils/validation';
+import { api } from '@/services/api';
 
 const FarmerRegistration = () => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     phone: '',
     district: '',
@@ -18,6 +21,9 @@ const FarmerRegistration = () => {
     crop: '',
     language: 'english'
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [farmers, setFarmers] = useState<Farmer[]>([]);
 
   const ugandanDistricts = [
     'Kabale', 'Kisoro', 'Mbale', 'Sironko', 'Kapchorwa', 'Gulu', 'Lira', 'Mbarara', 'Kampala'
@@ -35,43 +41,86 @@ const FarmerRegistration = () => {
     { value: 'acholi', label: 'Acholi' }
   ];
 
-  const registeredFarmers = [
-    { name: 'John Mukasa', district: 'Kabale', crop: 'Maize', phone: '+256 700 123 456' },
-    { name: 'Sarah Namuli', district: 'Mbale', crop: 'Coffee', phone: '+256 701 234 567' },
-    { name: 'Peter Okello', district: 'Gulu', crop: 'Beans', phone: '+256 702 345 678' },
-    { name: 'Mary Atim', district: 'Lira', crop: 'Rice', phone: '+256 703 456 789' }
-  ];
+  useEffect(() => {
+    fetchFarmers();
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name || !formData.phone || !formData.district || !formData.crop) {
+  const fetchFarmers = async () => {
+    try {
+      const response = await api.farmers.getAll();
+      setFarmers(response.data);
+    } catch (error) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
+        title: "Error",
+        description: "Failed to fetch farmers. Please try again.",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    
+    const { isValid, errors: validationErrors } = validateForm(formData);
+    
+    if (!isValid) {
+      setErrors(validationErrors);
       return;
     }
 
-    toast({
-      title: "Farmer Registered Successfully!",
-      description: `${formData.name} has been registered for ${formData.crop} farming in ${formData.district}.`
-    });
+    setIsLoading(true);
+    try {
+      await api.farmers.register({
+        ...formData,
+        status: 'active'
+      });
 
-    // Reset form
-    setFormData({
-      name: '',
-      phone: '',
-      district: '',
-      subCounty: '',
-      crop: '',
-      language: 'english'
-    });
+      toast({
+        title: "Success",
+        description: `${formData.name} has been registered successfully.`
+      });
+
+      // Reset form
+      setFormData({
+        name: '',
+        phone: '',
+        district: '',
+        subCounty: '',
+        crop: '',
+        language: 'english'
+      });
+
+      // Refresh farmers list
+      fetchFarmers();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to register farmer. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: FormField, value: string) => {
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      if (field === 'phone') {
+        newData.phone = formatPhoneNumber(value);
+      }
+      return newData;
+    });
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
   return (
@@ -97,7 +146,12 @@ const FarmerRegistration = () => {
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="Enter farmer's full name"
+                  aria-invalid={!!errors.name}
+                  aria-describedby={errors.name ? "name-error" : undefined}
                 />
+                {errors.name && (
+                  <p className="text-sm text-red-500" id="name-error">{errors.name}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -107,13 +161,21 @@ const FarmerRegistration = () => {
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   placeholder="+256 700 000 000"
+                  aria-invalid={!!errors.phone}
+                  aria-describedby={errors.phone ? "phone-error" : undefined}
                 />
+                {errors.phone && (
+                  <p className="text-sm text-red-500" id="phone-error">{errors.phone}</p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="district">District *</Label>
-                <Select value={formData.district} onValueChange={(value) => handleInputChange('district', value)}>
-                  <SelectTrigger>
+                <Select 
+                  value={formData.district} 
+                  onValueChange={(value) => handleInputChange('district', value)}
+                >
+                  <SelectTrigger aria-invalid={!!errors.district}>
                     <SelectValue placeholder="Select district" />
                   </SelectTrigger>
                   <SelectContent>
@@ -122,6 +184,9 @@ const FarmerRegistration = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.district && (
+                  <p className="text-sm text-red-500">{errors.district}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -136,8 +201,11 @@ const FarmerRegistration = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="crop">Primary Crop *</Label>
-                <Select value={formData.crop} onValueChange={(value) => handleInputChange('crop', value)}>
-                  <SelectTrigger>
+                <Select 
+                  value={formData.crop} 
+                  onValueChange={(value) => handleInputChange('crop', value)}
+                >
+                  <SelectTrigger aria-invalid={!!errors.crop}>
                     <SelectValue placeholder="Select primary crop" />
                   </SelectTrigger>
                   <SelectContent>
@@ -146,11 +214,17 @@ const FarmerRegistration = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.crop && (
+                  <p className="text-sm text-red-500">{errors.crop}</p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="language">Preferred Language</Label>
-                <Select value={formData.language} onValueChange={(value) => handleInputChange('language', value)}>
+                <Select 
+                  value={formData.language} 
+                  onValueChange={(value) => handleInputChange('language', value as FormData['language'])}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select language" />
                   </SelectTrigger>
@@ -163,9 +237,9 @@ const FarmerRegistration = () => {
               </div>
             </div>
 
-            <Button type="submit" className="w-full md:w-auto">
+            <Button type="submit" className="w-full md:w-auto" disabled={isLoading}>
               <User className="h-4 w-4 mr-2" />
-              Register Farmer
+              {isLoading ? 'Registering...' : 'Register Farmer'}
             </Button>
           </form>
         </CardContent>
@@ -184,8 +258,8 @@ const FarmerRegistration = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {registeredFarmers.map((farmer, index) => (
-              <div key={index} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+            {farmers.map((farmer) => (
+              <div key={farmer.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                 <div className="flex justify-between items-start">
                   <div className="space-y-1">
                     <h4 className="font-semibold">{farmer.name}</h4>
@@ -204,8 +278,8 @@ const FarmerRegistration = () => {
                       </div>
                     </div>
                   </div>
-                  <Badge variant="outline" className="bg-green-100 text-green-800">
-                    Active
+                  <Badge variant="outline" className={farmer.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                    {farmer.status}
                   </Badge>
                 </div>
               </div>
