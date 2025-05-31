@@ -263,7 +263,7 @@ const FarmerRegistration = () => {
           <div className="space-y-3">
             {farmers && Array.isArray(farmers) && farmers.map((farmer) => (
               <div key={farmer.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex justify-between items-start">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-2 md:space-y-0">
                   <div className="space-y-1">
                     <h4 className="font-semibold">{farmer.name}</h4>
                     <div className="flex items-center space-x-4 text-sm text-gray-600">

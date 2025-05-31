@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Sprout, Users, MessageSquare, Satellite, CloudRain, Sun, Zap, Calendar } from "lucide-react";
+import { AlertTriangle, Sprout, Users, MessageSquare, Satellite, CloudRain, Sun, Zap, Calendar, Menu } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import FarmerRegistration from "@/components/FarmerRegistration";
 import CropMonitoring from "@/components/CropMonitoring";
@@ -11,6 +11,7 @@ import AlertsPanel from "@/components/AlertsPanel";
 import SpaceWeatherMonitor from "@/components/SpaceWeatherMonitor";
 import CropCalendar from "@/components/CropCalendar";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 
 // API endpoints
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -115,9 +116,9 @@ const Index = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-7 bg-white">
+          <TabsList className="flex flex-nowrap overflow-x-auto justify-start md:grid md:grid-cols-7 w-full bg-white space-x-2 px-2 md:px-0">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <Sun className="h-4 w-4" />
               <span>Overview</span>
