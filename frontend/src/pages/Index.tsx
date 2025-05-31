@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -10,20 +10,78 @@ import WeatherDashboard from "@/components/WeatherDashboard";
 import AlertsPanel from "@/components/AlertsPanel";
 import SpaceWeatherMonitor from "@/components/SpaceWeatherMonitor";
 import CropCalendar from "@/components/CropCalendar";
+import { useQuery } from "@tanstack/react-query";
+
+// API endpoints
+const API_BASE_URL = "http://localhost:3000/api";
+
+// Types
+interface DashboardStats {
+  totalFarmers: number;
+  activeAlerts: number;
+  healthyCrops: number;
+  riskCrops: number;
+  spaceWeatherStatus: string;
+  nextPlantingWindow: string;
+}
+
+interface Alert {
+  id: string;
+  type: string;
+  message: string;
+  timestamp: string;
+  affectedFarmers: number;
+}
+
+interface SystemStatus {
+  satelliteFeed: string;
+  weatherApi: string;
+  spaceWeatherMonitor: string;
+  smsGateway: string;
+}
 
 const Index = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Mock data for dashboard overview
-  const stats = {
-    totalFarmers: 247,
-    activeAlerts: 12,
-    healthyCrops: 189,
-    riskCrops: 58,
-    spaceWeatherStatus: 'Minor Storm',
-    nextPlantingWindow: 'June 5-15'
-  };
+  // Fetch dashboard stats
+  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
+    queryKey: ["dashboardStats"],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/dashboard/stats`);
+      if (!response.ok) throw new Error("Failed to fetch dashboard stats");
+      return response.json();
+    },
+  });
+
+  // Fetch recent alerts
+  const { data: alerts, isLoading: alertsLoading } = useQuery<Alert[]>({
+    queryKey: ["recentAlerts"],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/alerts/recent`);
+      if (!response.ok) throw new Error("Failed to fetch recent alerts");
+      return response.json();
+    },
+  });
+
+  // Fetch system status
+  const { data: systemStatus, isLoading: statusLoading } = useQuery<SystemStatus>({
+    queryKey: ["systemStatus"],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/system/status`);
+      if (!response.ok) throw new Error("Failed to fetch system status");
+      return response.json();
+    },
+  });
+
+  // Show loading state
+  if (statsLoading || alertsLoading || statusLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50">
@@ -49,7 +107,7 @@ const Index = () => {
               </Badge>
               <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">
                 <Zap className="h-3 w-3 mr-1" />
-                {stats.spaceWeatherStatus}
+                {stats?.spaceWeatherStatus}
               </Badge>
             </div>
           </div>
@@ -99,7 +157,7 @@ const Index = () => {
                   <Users className="h-5 w-5 opacity-75" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{stats.totalFarmers}</div>
+                  <div className="text-3xl font-bold">{stats?.totalFarmers}</div>
                   <p className="text-xs opacity-75 mt-1">+12% from last month</p>
                 </CardContent>
               </Card>
@@ -110,7 +168,7 @@ const Index = () => {
                   <Zap className="h-5 w-5 opacity-75" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-lg font-bold">{stats.spaceWeatherStatus}</div>
+                  <div className="text-lg font-bold">{stats?.spaceWeatherStatus}</div>
                   <p className="text-xs opacity-75 mt-1">Monitoring crop impact</p>
                 </CardContent>
               </Card>
@@ -121,7 +179,7 @@ const Index = () => {
                   <Sprout className="h-5 w-5 opacity-75" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{stats.healthyCrops}</div>
+                  <div className="text-3xl font-bold">{stats?.healthyCrops}</div>
                   <p className="text-xs opacity-75 mt-1">76% of total farms</p>
                 </CardContent>
               </Card>
@@ -132,7 +190,7 @@ const Index = () => {
                   <Calendar className="h-5 w-5 opacity-75" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-lg font-bold">{stats.nextPlantingWindow}</div>
+                  <div className="text-lg font-bold">{stats?.nextPlantingWindow}</div>
                   <p className="text-xs opacity-75 mt-1">Optimal window for maize</p>
                 </CardContent>
               </Card>
@@ -148,18 +206,12 @@ const Index = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="border-l-4 border-orange-400 pl-4">
-                    <p className="text-sm font-medium">Space Weather Alert - Coffee Regions</p>
-                    <p className="text-xs text-gray-600">Sent to 45 coffee farmers • 1 hour ago</p>
-                  </div>
-                  <div className="border-l-4 border-red-400 pl-4">
-                    <p className="text-sm font-medium">Drought Warning - Kabale</p>
-                    <p className="text-xs text-gray-600">Sent to 23 maize farmers • 2 hours ago</p>
-                  </div>
-                  <div className="border-l-4 border-green-400 pl-4">
-                    <p className="text-sm font-medium">Optimal Planting Window - Mbarara</p>
-                    <p className="text-xs text-gray-600">Sent to 31 farmers • 6 hours ago</p>
-                  </div>
+                  {alerts?.map((alert) => (
+                    <div key={alert.id} className="border-l-4 border-orange-400 pl-4">
+                      <p className="text-sm font-medium">{alert.message}</p>
+                      <p className="text-xs text-gray-600">Sent to {alert.affectedFarmers} farmers • {alert.timestamp}</p>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
 
@@ -173,19 +225,27 @@ const Index = () => {
                 <CardContent className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Satellite NDVI Feed</span>
-                    <Badge variant="outline" className="bg-green-100 text-green-800">Online</Badge>
+                    <Badge variant="outline" className={`bg-${systemStatus?.satelliteFeed === 'Online' ? 'green' : 'red'}-100 text-${systemStatus?.satelliteFeed === 'Online' ? 'green' : 'red'}-800`}>
+                      {systemStatus?.satelliteFeed}
+                    </Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Weather API</span>
-                    <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
+                    <Badge variant="outline" className={`bg-${systemStatus?.weatherApi === 'Active' ? 'green' : 'red'}-100 text-${systemStatus?.weatherApi === 'Active' ? 'green' : 'red'}-800`}>
+                      {systemStatus?.weatherApi}
+                    </Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Space Weather Monitor</span>
-                    <Badge variant="outline" className="bg-orange-100 text-orange-800">Alert Mode</Badge>
+                    <Badge variant="outline" className={`bg-${systemStatus?.spaceWeatherMonitor === 'Alert Mode' ? 'orange' : 'green'}-100 text-${systemStatus?.spaceWeatherMonitor === 'Alert Mode' ? 'orange' : 'green'}-800`}>
+                      {systemStatus?.spaceWeatherMonitor}
+                    </Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">SMS Gateway</span>
-                    <Badge variant="outline" className="bg-green-100 text-green-800">Connected</Badge>
+                    <Badge variant="outline" className={`bg-${systemStatus?.smsGateway === 'Connected' ? 'green' : 'red'}-100 text-${systemStatus?.smsGateway === 'Connected' ? 'green' : 'red'}-800`}>
+                      {systemStatus?.smsGateway}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
